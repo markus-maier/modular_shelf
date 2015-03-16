@@ -15,7 +15,7 @@ shell_thickness = 2;
 //false, if no foot is required
 its_a_bottom_part = "false"; //[true, false]
 //false, if the 1-connector-bottom-parts slot should face to the side
-straight_1_connector_bottom = "true"; //[true, false]
+straight_1_connector_bottom = "false"; //[true, false]
 //how thick should the foot be?
 ground_offset = 16;
 //what width should the foot have?
@@ -31,6 +31,7 @@ insert_hole_for_brace = "true"; //[true, false]
 brace_hole_size = 3;
 //depth of said holes
 brace_hole_depth = 20; 
+/* [Edge] */
 
 module centerpiece(){
         if((connectors_amount < 5) && (connectors_angle == 90)){
@@ -68,6 +69,16 @@ module notch(){
     }
 }
 
+module board_hole(){
+    if (insert_hole_for_board == "true"){
+        difference(){
+            notch();
+    translate([0, notch_lenght / 2 + board_thickness, shell_thickness / 2 + 1]) rotate([0,90,0]) #cylinder(h=board_thickness + 2*shell_thickness+0.1,r=board_hole_size/2, center=true);}
+}
+else{
+    notch();}
+}
+
 module rounded_corner(){
     difference(){
     translate([-(board_thickness + 2 * shell_thickness + notch_lenght / 7) / 2,-(board_thickness + 2 * shell_thickness + notch_lenght / 7) / 2, 0]) 
@@ -77,20 +88,11 @@ module rounded_corner(){
     
 }
 
-module board_hole(){
-    rotate([90, 0, 0])
-        translate([-(board_thickness + shell_thickness + notch_lenght / 2), 0, 0]) 
-            cylinder(h = notch_depth * notch_lenght, r = board_hole_size / 2, center = true);
-}
-
 module main(){
-    difference(){
     union(){
     brace_hole(); 
     for (i = [1 : connectors_amount]){
-       rotate([0, 0, connectors_angle * i])
-            notch();
-    }
+        rotate([0, 0, connectors_angle * i]) board_hole();}
     if (connectors_amount > 1 && connectors_amount < 8 && connectors_angle == 90){
         
         for (i = [1 : pow(2, connectors_amount - 2)]){
@@ -108,12 +110,10 @@ module main(){
     if (its_a_bottom_part && (connectors_amount == 3)){
         ground_piece();}
     }
-    for (i = [0 : connectors_amount - 1])
-    rotate([0, 0, i * connectors_angle]) board_hole();}
 }
 
 //minkowski(){
 main();
 //rounded_corner();
 //rotate([0,0,90]) rounded_corner();
-//cylinder(h = 10, r = 2, center = true);}
+//cylinder(h = 10, r = 2, center = true);}-

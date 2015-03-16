@@ -1,23 +1,36 @@
-connectors_amount = 3; //everything above 4 is very experimental
-    connectors_angle = 90; //very experimental feature
-
-board_thickness = 8; //enter the thickness of your boards
-notch_lenght = 35; //how long should the cutout for the board be?
-notch_depth = 30; //depth of the cutout
-shell_thickness = 2; //thickness of the walls
-
-its_a_bottom_part = false; //false, if no foot is required
-    straight_1_connector_bottom = false; //false, if the 1-connector-bottom-parts slot should face to the side
-    ground_offset = 16;
-    ground_surface = notch_lenght * 0.75;
-
-insert_hole_for_board = true; //true, if there should be holes in the middle of the slotpartkindofthing
-    board_hole_size = 3; //diameter of the hole
-    board_hole_amount = 2; //amount of holes
-
-insert_hole_for_brace = true; //true, if there is shold be a hole for screws for some diagonal braces
-    brace_hole_size = 3; //size of said holes
-    brace_hole_depth = 20; //depth of said holes
+/* [Basics] */
+//how many boards do you want to connect? (everything above 4 is very experimental!)
+connectors_amount = 3;
+//connectors_angle..very experimental feature
+connectors_angle = 90;
+//enter the thickness of your boards
+board_thickness = 9;
+//how long should the cutout for the board be?
+notch_lenght = 35;
+//depth of the cutout
+notch_depth = 30;
+//thickness of the walls
+shell_thickness = 2;
+/* [Bottom Part] */
+//false, if no foot is required
+its_a_bottom_part = "false"; //[true, false]
+//false, if the 1-connector-bottom-parts slot should face to the side
+straight_1_connector_bottom = "true"; //[true, false]
+//how thick should the foot be?
+ground_offset = 16;
+//what width should the foot have?
+ground_surface = notch_lenght * 0.75;
+/* [Holes] */
+//true, if there should be holes in the middle of the slotpartkindofthing
+insert_hole_for_board = "true"; //[true, false]
+//diameter of the hole
+board_hole_size = 3;
+//true, if there is shold be a hole for screws for some diagonal braces
+insert_hole_for_brace = "true"; //[true, false]
+//size of said holes
+brace_hole_size = 3;
+//depth of said holes
+brace_hole_depth = 20; 
 
 module centerpiece(){
         if((connectors_amount < 5) && (connectors_angle == 90)){
@@ -28,7 +41,7 @@ module centerpiece(){
 }
 
 module brace_hole(){
-    if (insert_hole_for_brace == true){
+    if (insert_hole_for_brace == "true"){
         difference(){
             centerpiece();
             translate([0, 0, - notch_depth / 2 - 1]) cylinder (h = brace_hole_depth + 1, r = brace_hole_size / 2, center = false, $fn=brace_hole_size + 2);
@@ -39,7 +52,7 @@ module brace_hole(){
 }
 
 module ground_piece(){
-    if (its_a_bottom_part == true && connectors_amount < 4){
+    if (its_a_bottom_part == "true" && connectors_amount < 4){
         translate([0, (ground_offset + board_thickness)/2 + shell_thickness, 0])
         cube([ground_surface, ground_offset, notch_depth], center = true);
     }
@@ -85,7 +98,7 @@ module main(){
         }
     }
     if (its_a_bottom_part && (connectors_amount == 1)){
-        if (straight_1_connector_bottom == false){
+        if (straight_1_connector_bottom == "false" && its_a_bottom_part == "true"){
         translate([(board_thickness + 2 * shell_thickness - ground_surface) / 2, 0, 0]) ground_piece();}    
         else{
             translate([(ground_offset + board_thickness) / 2 + shell_thickness, 0, 0]) cube([ground_offset, board_thickness + 2 * shell_thickness, notch_depth], center = true);}
@@ -95,8 +108,8 @@ module main(){
     if (its_a_bottom_part && (connectors_amount == 3)){
         ground_piece();}
     }
-    for (i=[0:connectors_amount-1])
-    rotate([0,0,i * connectors_angle]) board_hole();}
+    for (i = [0 : connectors_amount - 1])
+    rotate([0, 0, i * connectors_angle]) board_hole();}
 }
 
 //minkowski(){

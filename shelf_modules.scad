@@ -1,9 +1,9 @@
 /* [Basics] */
-//how many boards do you want to connect? (everything above 4 is very experimental!)
+//how many boards do you want to connect? (1-4; otherwise experimental)
 connectors_amount = 3;
-//connectors_angle..very experimental feature
+//angle between connectors..(default is 90, rest is experimental)
 connectors_angle = 90;
-//enter the thickness of your boards
+//enter the thickness of your boards (0 for solid parts, but then: shell thickness ok?)
 board_thickness = 9;
 //how long should the cutout for the board be?
 notch_lenght = 35;
@@ -11,7 +11,7 @@ notch_lenght = 35;
 notch_depth = 30;
 //thickness of the walls
 shell_thickness = 2;
-//inner edges fillet
+//inner edges fillet (0 for none; experimental)
 edges_fillet = 7; //[0:10]
 /* [Bottom Part] */
 //false, if no foot is required
@@ -20,8 +20,9 @@ its_a_bottom_part = "false"; //[true, false]
 straight_1_connector_bottom = "false"; //[true, false]
 //how thick should the foot be?
 ground_offset = 16;
-//what width should the foot have?
-ground_surface = notch_lenght * 0.75;
+//what width should the foot have? (P
+foot_width = 30; //[0;100]
+ground_surface = ((notch_lenght+shell_thickness)*2 + board_thickness)* foot_width/100;
 /* [Holes] */
 //true, if there should be holes in the middle of the slotpartkindofthing
 insert_hole_for_board = "true"; //[true, false]
@@ -34,8 +35,7 @@ brace_hole_size = 3;
 //depth of said holes
 brace_hole_depth = 20; 
 /* [Back] */
-back_parts_amount = 2; //[0;4]
-back_amount = spaces - back_parts_amount;
+back_parts_amount = 4; //[0;4]
 /* [Edge] */
 // polynomial that goes through (1,1), (2,1), (3,2), (4,3) for number of spaces between rectangular notches
     //y(x) = pow(x, 2) / 2 - 3 * x / 2 + 2    
@@ -90,10 +90,10 @@ else{
 
 module rounded_corner(){
     difference(){
-    translate([-(board_thickness + 2 * shell_thickness + notch_lenght / 7) / 2,-(board_thickness + 2 * shell_thickness + notch_lenght / 7) / 2, 0]) 
-        cube([notch_lenght / 7, notch_lenght / 7, notch_depth+shell_thickness], center = true);
-    translate([-(board_thickness + 2 * shell_thickness + 2* notch_lenght / 7)/2,-(board_thickness + 2 * shell_thickness + 2*notch_lenght / 7) / 2, 0])  
-        cylinder(h = notch_depth+shell_thickness+0.1, r = notch_lenght/7, center = true);;}
+    translate([-(board_thickness + 2 * shell_thickness + notch_lenght / edges_fillet) / 2,-(board_thickness + 2 * shell_thickness + notch_lenght / edges_fillet) / 2, 0]) 
+        cube([notch_lenght / edges_fillet, notch_lenght / edges_fillet, notch_depth+shell_thickness], center = true);
+    translate([-(board_thickness + 2 * shell_thickness + 2* notch_lenght / edges_fillet)/2,-(board_thickness + 2 * shell_thickness + 2*notch_lenght / edges_fillet) / 2, 0])  
+        cylinder(h = notch_depth+shell_thickness+0.1, r = notch_lenght/edges_fillet, center = true);;}
     
 }
 
@@ -122,27 +122,29 @@ module main(){
 }
 
 module add_back_notch(){
+    if (back_parts_amount > 0){
 difference(){
 union(){
 main();
-    for (i = [1 : spaces]){
+    for (i = [1 : back_parts_amount]){
         //spaces = (pow(i, 2) / 2) - (3 * i / 2) + 2;
-        echo(spaces);
+        //echo(spaces);
         rotate([0, 0, (i - 1) * connectors_angle])
 translate([-(board_thickness+shell_thickness*2+notch_lenght)/2, -(notch_lenght+board_thickness+2*shell_thickness)/2,-(notch_depth-board_thickness-shell_thickness)/2]) cube([notch_lenght, notch_lenght,board_thickness+2*shell_thickness], center = true);
-    }/*
+    }}/*
     for (i = [1 : pow(2, connectors_amount - 2)]){
         //echo(i)
             rotate([0, 0, (i - 1) * connectors_angle])
 translate([-(board_thickness+shell_thickness*2+notch_lenght)/2, -(notch_lenght+board_thickness+2*shell_thickness)/2,-(notch_depth-board_thickness-shell_thickness)/2]) cube([notch_lenght, notch_lenght,board_thickness+2*shell_thickness], center = true);
-}*/}
-for (i = [1 : spaces]){
+}*/
+for (i = [1 : back_parts_amount]){
         //spaces = (pow(i, 2) / 2) - (3 * i / 2) + 2;
-        echo(spaces);
+        //echo(spaces);
         rotate([0, 0, (i-1) * connectors_angle])
-translate([-(board_thickness + shell_thickness * 2 + notch_lenght) / 2 - 1, -(notch_lenght + board_thickness + 2 * shell_thickness) / 2-1,-(notch_depth - board_thickness - shell_thickness) / 2]) #cube([notch_lenght+2, notch_lenght+2, board_thickness], center = true);}}
-//    rotate([0, -90, 90]) translate([-(notch_depth - board_thickness - shell_thickness * 2 + shell_thickness) / 2, 0, (board_thickness + notch_depth + shell_thickness)/2+shell_thickness]) board_hole();
+translate([-(board_thickness + shell_thickness * 2 + notch_lenght) / 2 - 1, -(notch_lenght + board_thickness + 2 * shell_thickness) / 2-1,-(notch_depth - board_thickness - shell_thickness) / 2]) cube([notch_lenght+2, notch_lenght+2, board_thickness], center = true);}}}
 }
+//    rotate([0, -90, 90]) translate([-(notch_depth - board_thickness - shell_thickness * 2 + shell_thickness) / 2, 0, (board_thickness + notch_depth + shell_thickness)/2+shell_thickness]) board_hole();
+
 
 add_back_notch();
 

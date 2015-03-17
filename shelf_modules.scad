@@ -1,3 +1,4 @@
+$fn = 50;
 /* [Basics] */
 //how many boards do you want to connect? (default: 1-4; experimental)
 connectors_amount = 3;
@@ -12,7 +13,10 @@ notch_depth = 30;
 //thickness of the walls
 shell_thickness = 2;
 //inner edges fillet (0 for none, default: 7; experimental)
-edges_fillet = 7; //[0:10]
+edges_fillet = 0.2; //[0:0.1:1]
+edges_fillet2 = 1/edges_fillet; //makes it more natural to use
+//sidelenght of square for cutout in center
+center_cutout = 0;
 /* [Bottom Part] */
 //false, if no foot is required
 its_a_bottom_part = "false"; //[true, false]
@@ -21,7 +25,7 @@ straight_1_connector_bottom = "false"; //[true, false]
 //how thick should the foot be?
 ground_offset = 16;
 //what width should the foot have? (default: 30; experimental)
-foot_width = 30; //[0;100]
+foot_width = 30; //[0:100]
 ground_surface = ((notch_lenght + shell_thickness) * 2 + board_thickness)* foot_width / 100;
 /* [Holes] */
 //true, if there should be holes in the middle of the slotpartkindofthing
@@ -35,27 +39,32 @@ brace_hole_size = 3;
 //depth of said holes
 brace_hole_depth = 20; 
 /* [Panels] */
-//amount of back parts (default: 0, experimental)
-back_parts_amount = 0; //[0;4]
+//amount of back parts (default: 0-4, experimental)
+back_parts_amount = 0; //[0:4]
+//size of holes (default: 3)
 back_part_hole_size = 3;
-/* [Edge] */
+//make back panel part as a triangle (default: true)
+back_part_triangle = "true"; //["true", "false"]
 // polynomial that goes through (1,1), (2,1), (3,2), (4,3) for number of spaces between rectangular notches
     //y(x) = pow(x, 2) / 2 - 3 * x / 2 + 2    
 spaces = (pow(connectors_amount, 2) / 2) - (3 * connectors_amount / 2) + 2;
 
 module centerpiece(){
+    difference(){
         if((connectors_amount < 5) && (connectors_angle == 90)){
                 cube([board_thickness + shell_thickness * 2, board_thickness + (shell_thickness*2), notch_depth + shell_thickness], center = true);}    
         else{
-            cylinder(h = notch_depth + shell_thickness, r = board_thickness + shell_thickness, center = true);
+        cylinder(h = notch_depth + shell_thickness, r = board_thickness + shell_thickness, center = true);
         }
-}
+        cube([center_cutout, center_cutout, notch_depth + shell_thickness + 0.1], center = true);}
+    }
+
 
 module brace_hole(){
     if (insert_hole_for_brace == "true"){
         difference(){
             centerpiece();
-            translate([0, 0, - notch_depth / 2 - 1]) cylinder (h = brace_hole_depth + 1, r = brace_hole_size / 2, center = false, $fn=brace_hole_size + 2);
+            translate([0, 0, - notch_depth / 2 - shell_thickness / 2 - 0.05]) cylinder (h = brace_hole_depth + 0.1, r = brace_hole_size / 2, center = false, $fn=brace_hole_size + 2);
         }
     } else{
         centerpiece();
@@ -74,7 +83,7 @@ module notch(){
         //centerpiece();
         translate([0, (notch_lenght + board_thickness) / 2 + shell_thickness, 0])
             cube([board_thickness + shell_thickness * 2, notch_lenght + shell_thickness*0, notch_depth + shell_thickness], center = true);
-        translate([0, notch_lenght / 2 + board_thickness, shell_thickness / 2 + 1])
+        translate([0, notch_lenght / 2 + board_thickness, shell_thickness])
             cube([board_thickness, notch_lenght * 2, notch_depth + shell_thickness + 0.1], center = true);
     }
 }
@@ -85,7 +94,7 @@ module board_hole(){
         difference(){
             notch();
             translate([0, (notch_lenght + board_thickness + 2 * shell_thickness) / 2, 0])
-            rotate([0,90,0]) #cylinder(h=board_thickness + 2 * shell_thickness + 0.1, r = board_hole_size / 2, center = true);}
+            rotate([0,90,0]) cylinder(h=board_thickness + 2 * shell_thickness + 0.1, r = board_hole_size / 2, center = true);}
 }
 else{
     notch();}
@@ -93,10 +102,10 @@ else{
 
 module rounded_corner(){
     difference(){
-    translate([-(board_thickness + 2 * shell_thickness + notch_lenght / edges_fillet) / 2,-(board_thickness + 2 * shell_thickness + notch_lenght / edges_fillet) / 2, 0]) 
-        cube([notch_lenght / edges_fillet, notch_lenght / edges_fillet, notch_depth+shell_thickness], center = true);
-    translate([-(board_thickness + 2 * shell_thickness + 2* notch_lenght / edges_fillet)/2,-(board_thickness + 2 * shell_thickness + 2*notch_lenght / edges_fillet) / 2, 0])  
-        cylinder(h = notch_depth+shell_thickness+0.1, r = notch_lenght/edges_fillet, center = true);;}
+    translate([-(board_thickness + 2 * shell_thickness + notch_lenght / edges_fillet2) / 2,-(board_thickness + 2 * shell_thickness + notch_lenght / edges_fillet2) / 2, 0]) 
+        cube([notch_lenght / edges_fillet2, notch_lenght / edges_fillet2, notch_depth+shell_thickness], center = true);
+    translate([-(board_thickness + 2 * shell_thickness + 2 * notch_lenght / edges_fillet2)/2,-(board_thickness + 2 * shell_thickness + 2*notch_lenght / edges_fillet2) / 2, 0])  
+        cylinder(h = notch_depth+shell_thickness+0.1, r = notch_lenght/edges_fillet2, center = true);;}
     
 }
 
@@ -131,20 +140,32 @@ module add_back_notch(){
                 main();
                 for (i = [1 : back_parts_amount]){
                     rotate([0, 0, (i - 1) * connectors_angle])
-                    translate([-(board_thickness + shell_thickness * 2 + notch_lenght) / 2, -(notch_lenght + board_thickness + 2 * shell_thickness) / 2,-(notch_depth - board_thickness - shell_thickness) / 2])
-                    cube([notch_lenght, notch_lenght, board_thickness + 2 * shell_thickness], center = true);
+                    translate([-(board_thickness + shell_thickness * 2 + notch_lenght) / 2+shell_thickness/2, -(notch_lenght + board_thickness + 2 * shell_thickness) / 2+shell_thickness/2, -(notch_depth - board_thickness - shell_thickness) / 2])
+                    cube([notch_lenght+shell_thickness, notch_lenght+shell_thickness, board_thickness + 2 * shell_thickness], center = true);
                 }
             }
+        
             for (i = [1 : back_parts_amount]){
                 rotate([0, 0, (i-1) * connectors_angle])
-                translate([-(board_thickness + shell_thickness * 2 + notch_lenght) / 2 - 1, -(notch_lenght + board_thickness + 2 * shell_thickness) / 2-1,-(notch_depth - board_thickness - shell_thickness) / 2])
-                cube([notch_lenght+2, notch_lenght+2, board_thickness], center = true);
+                translate([-(board_thickness + shell_thickness * 2 + notch_lenght) / 2 - 1, -(notch_lenght + board_thickness + 2 * shell_thickness) / 2 - 1,-(notch_depth - board_thickness - shell_thickness) / 2])
+                cube([notch_lenght+2, notch_lenght + 2, board_thickness], center = true);
+            if (back_part_triangle == "true"){
+               rotate([0, 0, (i-1) * connectors_angle])
+               translate([-(board_thickness + shell_thickness * 2 + notch_lenght) / 2, -(notch_lenght + board_thickness + 2 * shell_thickness) / 2,-(notch_depth - board_thickness - shell_thickness) / 2]) 
+                   rotate([0, 0, 45]) translate([-notch_lenght / 2, 0,0])
+                   cube([notch_lenght, notch_lenght * 2, notch_depth * 2], center = true);
+                   
+               rotate([0, 0, (i-1) * connectors_angle])
+               translate([-(board_thickness + shell_thickness * 2 + notch_lenght) / 2, -(notch_lenght + board_thickness + 2 * shell_thickness) / 2,-(notch_depth - board_thickness - shell_thickness) / 2])
+                    translate([notch_lenght/5,notch_lenght/5,0])
+                    cylinder(h = board_thickness + shell_thickness * 2 + 0.1,r=back_part_hole_size/2,center = true);
+            }else{
                 rotate([0, 0, (i-1) * connectors_angle])
                 translate([-(board_thickness + shell_thickness * 2 + notch_lenght) / 2, -(notch_lenght + board_thickness + 2 * shell_thickness) / 2,-(notch_depth - board_thickness - shell_thickness) / 2])
-                cylinder(h = board_thickness + 2 * shell_thickness + 0.1, r = back_part_hole_size / 2, center = true);
-            }
-            
+                cylinder(h = board_thickness + shell_thickness * 2 + 0.1, r = back_part_hole_size / 2, center = true);
+            }          
         }
+    }
 }else{
     main();
 }
@@ -154,5 +175,6 @@ module add_back_notch(){
 
 add_back_notch();
 
-//TODO: center board hole
-//TODO: 
+//TODO: customize hole amounts
+//TODO: individual thickness for panels and offset from build plate
+//TODO: hollow center
